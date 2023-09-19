@@ -17,7 +17,7 @@
 Solocraft.Enable = 1
 
 # Announce the module when the player logs in?
-Solocraft.Announce = 1
+Solocraft.Announce = 0
 
 
 ###################################################################################################
@@ -45,7 +45,7 @@ SoloCraft.Debuff.Enable = 1
 
 # Default:	2.5
 #			0.0 (Disable)
-SoloCraft.Spellpower.Mult = 2.5
+SoloCraft.Spellpower.Mult = 30.0
 
 
 # Stats Percentage Bonus Multiplier
@@ -53,7 +53,7 @@ SoloCraft.Spellpower.Mult = 2.5
 
 # Default: 	100.0
 #			0.0	(Disable)
-SoloCraft.Stats.Mult = 100.0
+SoloCraft.Stats.Mult = 120.0
 
 
 # Class Balancing Modifier
@@ -65,16 +65,16 @@ SoloCraft.Stats.Mult = 100.0
 #Default: 100 (Full Dungeon Difficulty Modifer will be Applied)
 #    	  0 (Disable) - 100
 
-SoloCraft.DEATH_KNIGHT = 100
-SoloCraft.DRUID = 100
-SoloCraft.HUNTER = 100
+SoloCraft.DEATH_KNIGHT = 60
+SoloCraft.DRUID = 80
+SoloCraft.HUNTER = 90
 SoloCraft.MAGE = 100
-SoloCraft.PALADIN = 100
+SoloCraft.PALADIN = 50
 SoloCraft.PRIEST = 100
 SoloCraft.ROGUE = 100
 SoloCraft.SHAMAN = 100
 SoloCraft.WARLOCK = 100
-SoloCraft.WARRIOR = 100
+SoloCraft.WARRIOR = 60
 
 
 # XP Gain 
@@ -103,9 +103,9 @@ Solocraft.XPBal.Enabled = 1
 # Difficulty Multipliers
 # Defaults: 5, 10, 25, 40
 Solocraft.Dungeon = 5.0 
-Solocraft.Heroic = 10.0
-Solocraft.Raid25 = 25.0
-Solocraft.Raid40 = 40.0
+Solocraft.Heroic  = 5.0
+Solocraft.Raid25  = 5.0
+Solocraft.Raid40  = 5.0
 
 
 ################################################################################################
@@ -126,22 +126,22 @@ Solocraft.RazorfenDowns = 5.0
 Solocraft.MonasteryInstances = 5.0
 # Zul'Farrak
 Solocraft.TanarisInstance = 5.0
-Solocraft.BlackRockSpire = 10.0
+Solocraft.BlackRockSpire = 5.0
 Solocraft.BlackrockDepths = 5.0
-Solocraft.OnyxiaLairInstance = 40.0
+Solocraft.OnyxiaLairInstance = 5.0
 #Scholomance
 Solocraft.SchoolofNecromancy = 5.0
-Solocraft.Zul'gurub = 20.0
+Solocraft.Zul'gurub = 5.0
 Solocraft.Stratholme = 5.0
 Solocraft.Mauradon = 5.0
 # Ragefire Chasm
 Solocraft.OrgrimmarInstance = 5.0
-Solocraft.MoltenCore = 40.0
+Solocraft.MoltenCore = 5.0
 Solocraft.DireMaul = 5.0
-Solocraft.BlackwingLair = 60.0
+Solocraft.BlackwingLair = 5.0
 # Ruins of Ahn'Qiraj
-Solocraft.AhnQiraj = 20.0
-Solocraft.AhnQirajTemple = 40.0
+Solocraft.AhnQiraj = 5.0
+Solocraft.AhnQirajTemple = 5.0
 
 
 ################################################################################################
@@ -151,9 +151,9 @@ Solocraft.AhnQirajTemple = 40.0
 # The Black Morass
 Solocraft.CavernsOfTime = 5.0
 Solocraft.CavernsOfTimeH = 5.0
-Solocraft.Karazahn = 10.0
+Solocraft.Karazahn = 5.0
 # The Battle for Mount Hyjal - Hyjal Summit
-Solocraft.HyjalPast = 25.0
+Solocraft.HyjalPast = 5.0
 # The Shattered Halls
 Solocraft.HellfireMilitary = 5.0
 Solocraft.HellfireMilitaryH = 5.0
@@ -163,7 +163,7 @@ Solocraft.HellfireDemonH = 5.0
 Solocraft.HellfireRampart = 5.0
 Solocraft.HellfireRampartH = 5.0
 # Magtheridon's Lair
-Solocraft.HellfireRaid = 25.0
+Solocraft.HellfireRaid = 5.0
 # The Steamvault
 Solocraft.CoilfangPumping = 5.0
 Solocraft.CoilfangPumpingH = 5.0
@@ -174,9 +174,9 @@ Solocraft.CoilfangMarshH = 5.0
 Solocraft.CoilfangDraenei = 5.0
 Solocraft.CoilfangDraeneiH = 5.0
 # Serpentshrine Cavern
-Solocraft.CoilfangRaid = 25.0
+Solocraft.CoilfangRaid = 5.0
 # The Eye
-Solocraft.TempestKeepRaid = 25.0
+Solocraft.TempestKeepRaid = 5.0
 # The Arcatraz
 Solocraft.TempestKeepArcane = 5.0
 Solocraft.TempestKeepArcaneH = 5.0
@@ -201,11 +201,11 @@ Solocraft.AuchindounDraeneiH = 5.0
 # Old Hillsbrad Foothills
 Solocraft.HillsbradPast = 5.0
 Solocraft.HillsbradPastH = 5.0
-Solocraft.BlackTemple = 25.0
-Solocraft.GruulsLair = 25.0
+Solocraft.BlackTemple = 5.0
+Solocraft.GruulsLair = 5.0
 Solocraft.ZulAman = 5.0
 Solocraft.ZulAmanH = 5.0
-Solocraft.SunwellPlateau = 25.0
+Solocraft.SunwellPlateau = 5.0
 # Magister's Terrace
 Solocraft.Sunwell5ManFix = 5.0
 Solocraft.Sunwell5ManFixH = 5.0
@@ -216,8 +216,8 @@ Solocraft.Sunwell5ManFixH = 5.0
 ################################################################################################
 
 # Naxxramas
-Solocraft.StratholmeRaid = 10.0
-Solocraft.StratholmeRaidH = 25.0
+Solocraft.StratholmeRaid = 5.0
+Solocraft.StratholmeRaidH = 5.0
 # Utgarde Keep
 Solocraft.Valgarde70 = 5.0
 Solocraft.Valgarde70H = 5.0
@@ -245,33 +245,33 @@ Solocraft.Azjol_UppercityH = 5.0
 Solocraft.Ulduar80 = 5.0
 Solocraft.Ulduar80H = 5.0
 # Ulduar
-Solocraft.UlduarRaid = 10.0
-Solocraft.UlduarRaidH = 25.0
+Solocraft.UlduarRaid = 5.0
+Solocraft.UlduarRaidH = 5.0
 Solocraft.GunDrak = 5.0
 Solocraft.GunDrakH = 5.0
 # Violet Hold
 Solocraft.DalaranPrison = 5.0
 Solocraft.DalaranPrisonH = 5.0
 # The Obsidian Sanctum
-Solocraft.ChamberOfAspectsBlack = 10.0
-Solocraft.ChamberOfAspectsBlackH = 25.0
+Solocraft.ChamberOfAspectsBlack = 5.0
+Solocraft.ChamberOfAspectsBlackH = 5.0
 # The Eye of Eternity
-Solocraft.NexusRaid = 10.0
-Solocraft.NexusRaidH = 25.0
+Solocraft.NexusRaid = 5.0
+Solocraft.NexusRaidH = 5.0
 # Ahn'kahet: The Old Kingdom
 Solocraft.Azjol_LowerCity = 5.0
 Solocraft.Azjol_LowerCityH = 5.0
-Solocraft.IcecrownCitadel = 10.0
-Solocraft.IcecrownCitadelH = 25.0
+Solocraft.IcecrownCitadel = 5.0
+Solocraft.IcecrownCitadelH = 5.0
 # The Forge of Souls
 Solocraft.IcecrownCitadel5Man = 5.0
 Solocraft.IcecrownCitadel5ManH = 5.0
 # Trial of the Crusader
-Solocraft.ArgentTournamentRaid = 10.0
-Solocraft.ArgentTournamentRaidH = 25.0
+Solocraft.ArgentTournamentRaid = 5.0
+Solocraft.ArgentTournamentRaidH = 5.0
 # Grand Trial of the Crusader Heroic
-Solocraft.ArgentTournamentRaidH10 = 10.0
-Solocraft.ArgentTournamentRaidH25 = 25.0
+Solocraft.ArgentTournamentRaidH10 = 5.0
+Solocraft.ArgentTournamentRaidH25 = 5.0
 # Trial of the Champion
 Solocraft.ArgentTournamentDungeon = 5.0
 Solocraft.ArgentTournamentDungeonH = 5.0
@@ -294,7 +294,7 @@ Solocraft.ChamberOfAspectsRedH = 5.0
 # difficulty offset buff.
 # Default: 	10
 # Disable: 80
-Solocraft.Max.Level.Diff = 10
+Solocraft.Max.Level.Diff = 80
 
 
 ################################################################################################
