@@ -9,6 +9,8 @@
 #include "Pet.h"
 #include "Player.h"
 #include "ScriptMgr.h"
+#include "SpellAuras.h"
+#include "SpellAuraEffects.h"
 #include "Unit.h"
 #include <cstdint>
 #include <iostream>
@@ -27,6 +29,24 @@ bool SolocraftNoXPFlag = 0;
 float SoloCraftSpellMult = 1.0;
 float SoloCraftStatsMult = 100.0;
 float SoloCraftXPMod = 1.0;
+float SoloCraftCritMult = 0.5;
+float SoloCraftDefenseMult = 1.0;
+float SoloCraftDamagetakenMult = 1.0;
+
+// Kill Streak System
+bool SoloCraftKillStreakEnable = true;
+float SoloCraftKillStreakDamagePerKill = 2.0f;
+float SoloCraftKillStreakMaxBonus = 50.0f;
+uint32 SoloCraftKillStreakDecayTime = 900;
+
+// Kill Streak tracking maps
+std::map<ObjectGuid, uint32> playerKillStreaks;
+std::map<ObjectGuid, time_t> lastKillTime;
+std::map<ObjectGuid, float> playerKillStreakBonus; // Track current bonus for proper removal
+
+// Class-specific HP and Mana multipliers
+std::map<uint8, float> classHPMultipliers;
+std::map<uint8, float> classManaMultipliers;
 uint32 SolocraftLevelDiff = 1;
 uint32 SolocraftDungeonLevel = 1;
 std::unordered_map<uint8, uint32> classes;
@@ -35,12 +55,219 @@ std::unordered_map<uint32, float> diff_Multiplier;
 std::unordered_map<uint32, float> diff_Multiplier_Heroics;
 std::vector<uint32_t> SolocraftInstanceExcluded;
 
+enum SCSpells
+{
+    SPELL_CRIT_PCT_BONUS     = 19591, //"Tamed Pet Passive 06 (DND)", effct_0, effect_1
+    SPELL_DEFENSE_BONUS      = 39423, //"QATest +500 Defense (QASpell)", effect 0
+    SPELL_DAMAGETAKEN_BONUS  = 35697, //"Pet Passive (DND)", effect 0
+    SPELL_HEALTH_PCT_BONUS   = 56257, //"Increased Health", effct_0
+    SPELL_SPELLPOWER_BONUS   = 47182, //"Copy of Increase Spell Dam 121", effect_0, effect_1
+    // SPELL_KILLSTREAK_BONUS removed - caused HP reduction issues
+};
+
 float D5 = 1.0;
 float D10 = 1.0;
 float D25 = 1.0;
 float D40 = 1.0;
 float D649H10 = 1.0;
 float D649H25 = 1.0;
+
+static Aura* EnsureAura(Unit* unit, uint32 spellId)
+{
+    constexpr int32 SCAuraDuration = 24 * HOUR * IN_MILLISECONDS;
+
+    Aura* aura = unit->GetAura(spellId);
+    if (!aura)
+    {
+        if (unit->AddAura(spellId, unit))
+            aura = unit->GetAura(spellId);
+    }
+    if (aura)
+    {
+        aura->SetDuration(SCAuraDuration);
+        aura->SetMaxDuration(SCAuraDuration);
+    }
+    return aura;
+}
+
+static void EnsureUnAura(Unit* unit, uint32 spellId)
+{
+    unit->RemoveAurasDueToSpell(spellId);
+}
+
+// Kill Streak System Functions
+void ApplyKillStreakBonus(Player* player, uint32 killStreak)
+{
+    if (!SoloCraftKillStreakEnable || killStreak == 0)
+        return;
+
+    // Calculate damage bonus: every 5 kills = configured bonus
+    float damageBonus = std::min(SoloCraftKillStreakMaxBonus, (killStreak / 5) * SoloCraftKillStreakDamagePerKill);
+    
+    if (damageBonus > 0)
+    {
+        ObjectGuid playerGUID = player->GetGUID();
+        
+        // Remove previous kill streak bonus if any
+        if (playerKillStreakBonus.find(playerGUID) != playerKillStreakBonus.end())
+        {
+            float previousBonus = playerKillStreakBonus[playerGUID];
+            if (previousBonus > 0)
+            {
+                // Remove previous attack power bonus
+                int32 previousAPBonus = static_cast<int32>(previousBonus * player->GetLevel() * 2.5f);
+                player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, previousAPBonus, false);
+            }
+        }
+        
+        // Apply new attack power bonus based on damage bonus
+        // Formula: damageBonus * level * multiplier = attack power increase
+        int32 attackPowerBonus = static_cast<int32>(damageBonus * player->GetLevel() * 2.5f);
+        player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, attackPowerBonus, true);
+        
+        // Store current bonus for future removal
+        playerKillStreakBonus[playerGUID] = damageBonus;
+        
+        // Spell removed to avoid HP reduction issue - using only attack power scaling
+
+        // Send milestone messages with dynamic damage values
+        if (killStreak == 5)
+        {
+            std::ostringstream ss;
+            ss << "|cffFFFF00Matanza! (+" << static_cast<int>(damageBonus) << "% damage)|r";
+            ChatHandler(player->GetSession()).SendSysMessage(ss.str());
+        }
+        else if (killStreak == 10) 
+        {
+            std::ostringstream ss;
+            ss << "|cffFF8000Furia! (+" << static_cast<int>(damageBonus) << "% damage)|r";
+            ChatHandler(player->GetSession()).SendSysMessage(ss.str());
+        }
+        else if (killStreak == 15)
+        {
+            std::ostringstream ss;
+            ss << "|cffFF0000Imparable! (+" << static_cast<int>(damageBonus) << "% damage)|r";
+            ChatHandler(player->GetSession()).SendSysMessage(ss.str());
+        }
+        else if (killStreak >= 20 && (killStreak % 5) == 0)
+        {
+            std::ostringstream ss;
+            ss << "|cffFF0000DIVINO! (+" << static_cast<int>(damageBonus) << "% damage)|r";
+            ChatHandler(player->GetSession()).SendSysMessage(ss.str());
+        }
+    }
+}
+
+void ResetKillStreak(Player* player)
+{
+    if (!player)
+        return;
+
+    ObjectGuid playerGUID = player->GetGUID();
+    
+    if (playerKillStreaks[playerGUID] >= 5) // Only announce if they had a streak
+    {
+        ChatHandler(player->GetSession()).SendSysMessage("|cffFF0000Racha terminada! Bonificaciones reiniciadas.|r");
+    }
+
+    // Remove attack power bonus if any
+    if (playerKillStreakBonus.find(playerGUID) != playerKillStreakBonus.end())
+    {
+        float currentBonus = playerKillStreakBonus[playerGUID];
+        if (currentBonus > 0)
+        {
+            int32 attackPowerBonus = static_cast<int32>(currentBonus * player->GetLevel() * 2.5f);
+            player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, attackPowerBonus, false);
+        }
+    }
+
+    // Clear all tracking data
+    playerKillStreaks[playerGUID] = 0;
+    lastKillTime[playerGUID] = 0;
+    playerKillStreakBonus[playerGUID] = 0;
+    // EnsureUnAura removed - no longer using spell system
+}
+
+void CheckKillStreakDecay(Player* player)
+{
+    if (!SoloCraftKillStreakEnable)
+        return;
+
+    ObjectGuid playerGUID = player->GetGUID();
+    time_t currentTime = time(nullptr);
+    
+    if (lastKillTime[playerGUID] > 0 && 
+        (currentTime - lastKillTime[playerGUID]) > SoloCraftKillStreakDecayTime)
+    {
+        ResetKillStreak(player);
+    }
+}
+
+// Apply class-specific HP and Mana bonuses
+void ApplyClassSpecificBonuses(Player* player, float difficulty)
+{
+    if (!player)
+        return;
+
+    uint8 playerClass = player->getClass();
+    
+    // Get class-specific multipliers
+    float hpMultiplier = 1.0f;
+    float manaMultiplier = 1.0f;
+    
+    if (classHPMultipliers.find(playerClass) != classHPMultipliers.end())
+        hpMultiplier = classHPMultipliers[playerClass];
+    
+    if (classManaMultipliers.find(playerClass) != classManaMultipliers.end())
+        manaMultiplier = classManaMultipliers[playerClass];
+
+    // Apply HP multiplier
+    if (hpMultiplier > 0.0f)
+    {
+        uint32 baseMaxHealth = player->GetCreateHealth();
+        uint32 newMaxHealth = static_cast<uint32>(baseMaxHealth * hpMultiplier * difficulty);
+        player->SetMaxHealth(newMaxHealth);
+        player->SetFullHealth();
+    }
+
+    // Apply Mana multiplier (only for classes that use mana)
+    if (manaMultiplier > 0.0f && (player->getPowerType() == POWER_MANA || player->getClass() == CLASS_DRUID))
+    {
+        uint32 baseMaxMana = player->GetCreateMana();
+        if (baseMaxMana > 0)
+        {
+            uint32 newMaxMana = static_cast<uint32>(baseMaxMana * manaMultiplier * difficulty);
+            player->SetMaxPower(POWER_MANA, newMaxMana);
+            player->SetPower(POWER_MANA, newMaxMana);
+        }
+    }
+
+    // Send notification to player about class bonuses
+    std::string className = "";
+    switch(playerClass)
+    {
+        case CLASS_WARRIOR: className = "Warrior"; break;
+        case CLASS_PALADIN: className = "Paladin"; break;
+        case CLASS_HUNTER: className = "Hunter"; break;
+        case CLASS_ROGUE: className = "Rogue"; break;
+        case CLASS_PRIEST: className = "Priest"; break;
+        case CLASS_DEATH_KNIGHT: className = "Death Knight"; break;
+        case CLASS_SHAMAN: className = "Shaman"; break;
+        case CLASS_MAGE: className = "Mage"; break;
+        case CLASS_WARLOCK: className = "Warlock"; break;
+        case CLASS_DRUID: className = "Druid"; break;
+    }
+    
+    if (!className.empty())
+    {
+        std::ostringstream ss;
+        ss << "|cff4CFF00[SoloCraft] |cffFFFF00Bonificaciones de " << className << " aplicadas! ";
+        ss << "Vida: +" << static_cast<int>((hpMultiplier - 1.0f) * 100) << "% ";
+        if (player->getPowerType() == POWER_MANA || player->getClass() == CLASS_DRUID)
+            ss << "Maná: +" << static_cast<int>((manaMultiplier - 1.0f) * 100) << "%";
+        ChatHandler(player->GetSession()).SendSysMessage(ss.str().c_str());
+    }
+}
 
 class SolocraftConfig : public WorldScript
 {
@@ -65,6 +292,44 @@ public:
         SoloCraftDebuffEnable = sConfigMgr->GetOption<bool>("SoloCraft.Debuff.Enable", 1);
         SoloCraftSpellMult = sConfigMgr->GetOption<float>("SoloCraft.Spellpower.Mult", 2.5);
         SoloCraftStatsMult = sConfigMgr->GetOption<float>("SoloCraft.Stats.Mult", 100.0);
+        SoloCraftCritMult = sConfigMgr->GetOption<float>("SoloCraft.Crit.Mult", 0.5);
+        SoloCraftDefenseMult = sConfigMgr->GetOption<float>("SoloCraft.Defense.Mult", 1.0);
+        SoloCraftDamagetakenMult = sConfigMgr->GetOption<float>("SoloCraft.Damagetaken.Mult", 1.0);
+        
+        // Kill Streak System configuration
+        SoloCraftKillStreakEnable = sConfigMgr->GetOption<bool>("SoloCraft.KillStreak.Enable", true);
+        SoloCraftKillStreakDamagePerKill = sConfigMgr->GetOption<float>("SoloCraft.KillStreak.DamagePerKill", 2.0f);
+        SoloCraftKillStreakMaxBonus = sConfigMgr->GetOption<float>("SoloCraft.KillStreak.MaxBonus", 50.0f);
+        SoloCraftKillStreakDecayTime = sConfigMgr->GetOption<uint32>("SoloCraft.KillStreak.DecayTime", 900);
+
+        // Class-specific HP and Mana multipliers
+        classHPMultipliers =
+        {
+            {CLASS_WARRIOR, sConfigMgr->GetOption<float>("SoloCraft.Warrior.HP.Mult", 3.0f)},
+            {CLASS_PALADIN, sConfigMgr->GetOption<float>("SoloCraft.Paladin.HP.Mult", 2.5f)},
+            {CLASS_DEATH_KNIGHT, sConfigMgr->GetOption<float>("SoloCraft.DeathKnight.HP.Mult", 2.8f)},
+            {CLASS_ROGUE, sConfigMgr->GetOption<float>("SoloCraft.Rogue.HP.Mult", 2.0f)},
+            {CLASS_HUNTER, sConfigMgr->GetOption<float>("SoloCraft.Hunter.HP.Mult", 2.2f)},
+            {CLASS_MAGE, sConfigMgr->GetOption<float>("SoloCraft.Mage.HP.Mult", 1.5f)},
+            {CLASS_WARLOCK, sConfigMgr->GetOption<float>("SoloCraft.Warlock.HP.Mult", 1.8f)},
+            {CLASS_PRIEST, sConfigMgr->GetOption<float>("SoloCraft.Priest.HP.Mult", 1.6f)},
+            {CLASS_SHAMAN, sConfigMgr->GetOption<float>("SoloCraft.Shaman.HP.Mult", 2.0f)},
+            {CLASS_DRUID, sConfigMgr->GetOption<float>("SoloCraft.Druid.HP.Mult", 2.0f)}
+        };
+
+        classManaMultipliers =
+        {
+            {CLASS_WARRIOR, sConfigMgr->GetOption<float>("SoloCraft.Warrior.Mana.Mult", 0.8f)},
+            {CLASS_PALADIN, sConfigMgr->GetOption<float>("SoloCraft.Paladin.Mana.Mult", 2.0f)},
+            {CLASS_DEATH_KNIGHT, sConfigMgr->GetOption<float>("SoloCraft.DeathKnight.Mana.Mult", 1.5f)},
+            {CLASS_ROGUE, sConfigMgr->GetOption<float>("SoloCraft.Rogue.Mana.Mult", 0.8f)},
+            {CLASS_HUNTER, sConfigMgr->GetOption<float>("SoloCraft.Hunter.Mana.Mult", 1.8f)},
+            {CLASS_MAGE, sConfigMgr->GetOption<float>("SoloCraft.Mage.Mana.Mult", 4.0f)},
+            {CLASS_WARLOCK, sConfigMgr->GetOption<float>("SoloCraft.Warlock.Mana.Mult", 3.5f)},
+            {CLASS_PRIEST, sConfigMgr->GetOption<float>("SoloCraft.Priest.Mana.Mult", 3.8f)},
+            {CLASS_SHAMAN, sConfigMgr->GetOption<float>("SoloCraft.Shaman.Mana.Mult", 2.8f)},
+            {CLASS_DRUID, sConfigMgr->GetOption<float>("SoloCraft.Druid.Mana.Mult", 2.5f)}
+        };
         classes =
         {
             {1, sConfigMgr->GetOption<uint8>("SoloCraft.WARRIOR", 100) },
@@ -335,7 +600,7 @@ public:
     void OnPlayerLogin(Player* player) override
     {
         if (SoloCraftEnable && SoloCraftAnnounceModule)
-            ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00SoloCraft |rmodule.");
+            ChatHandler(player->GetSession()).SendSysMessage("Este servidor ejecuta el módulo |cff4CFF00SoloCraft|r.");
     }
 
     void OnPlayerLogout(Player* player) override
@@ -523,6 +788,23 @@ public:
 
         if (player->getPowerType() == POWER_MANA || player->getClass() == CLASS_DRUID)
             player->ApplySpellPowerBonus(SpellPowerBonus, false);
+
+        // Remove additional bonus auras
+        EnsureUnAura(player, SPELL_CRIT_PCT_BONUS);
+        EnsureUnAura(player, SPELL_DEFENSE_BONUS);
+        EnsureUnAura(player, SPELL_DAMAGETAKEN_BONUS);
+        
+        // Reset HP and Mana to base values
+        player->SetMaxHealth(player->GetCreateHealth());
+        player->SetFullHealth();
+        if (player->getPowerType() == POWER_MANA || player->getClass() == CLASS_DRUID)
+        {
+            player->SetMaxPower(POWER_MANA, player->GetCreateMana());
+            player->SetPower(POWER_MANA, player->GetMaxPower(POWER_MANA));
+        }
+        
+        // Reset kill streak when leaving instance
+        ResetKillStreak(player);
     }
 
     // Apply the player buffs
@@ -645,6 +927,66 @@ public:
                     }
                 }
 
+                // Apply additional bonuses for solo players
+                if (difficulty > 0)
+                {
+                    float stats_mult = difficulty * SoloCraftStatsMult;
+                    
+                    // Crit chance bonus
+                    if (SoloCraftCritMult > 0)
+                    {
+                        float critBonus = std::min(100.0f, SoloCraftCritMult * stats_mult * 0.1f);
+                        if (critBonus > 0)
+                        {
+                            if (Aura* existingAura = player->GetAura(SPELL_CRIT_PCT_BONUS))
+                                player->RemoveAura(existingAura);
+                            
+                            if (Aura* aura = EnsureAura(player, SPELL_CRIT_PCT_BONUS))
+                            {
+                                if (AuraEffect* aurEff = aura->GetEffect(0))
+                                    aurEff->ChangeAmount(static_cast<int32>(critBonus));
+                            }
+                        }
+                    }
+                    
+                    // Defense skill bonus  
+                    if (SoloCraftDefenseMult > 0)
+                    {
+                        float defenseBonus = std::min(1000.0f, std::max(0.0f, SoloCraftDefenseMult * stats_mult));
+                        if (defenseBonus > 0)
+                        {
+                            if (Aura* existingAura = player->GetAura(SPELL_DEFENSE_BONUS))
+                                player->RemoveAura(existingAura);
+                            
+                            if (Aura* aura = EnsureAura(player, SPELL_DEFENSE_BONUS))
+                            {
+                                if (AuraEffect* aurEff = aura->GetEffect(0))
+                                    aurEff->ChangeAmount(static_cast<int32>(defenseBonus));
+                            }
+                        }
+                    }
+                    
+                    // Damage taken reduction bonus
+                    if (SoloCraftDamagetakenMult > 0)
+                    {
+                        float damageTakenReduction = std::min(90.0f, std::max(0.0f, SoloCraftDamagetakenMult * stats_mult * 0.1f));
+                        if (damageTakenReduction > 0)
+                        {
+                            if (Aura* existingAura = player->GetAura(SPELL_DAMAGETAKEN_BONUS))
+                                player->RemoveAura(existingAura);
+                            
+                            if (Aura* aura = EnsureAura(player, SPELL_DAMAGETAKEN_BONUS))
+                            {
+                                if (AuraEffect* aurEff = aura->GetEffect(0))
+                                    aurEff->ChangeAmount(static_cast<int32>(-damageTakenReduction)); // Negative for damage reduction
+                            }
+                        }
+                    }
+                }
+
+                // Apply class-specific HP and Mana bonuses
+                ApplyClassSpecificBonuses(player, difficulty);
+
                 // XP Gain Disabled
                 if (!SolocraftXPEnabled)
                 {
@@ -659,19 +1001,19 @@ public:
                     // Announce to player - Buff
                     if (!SolocraftXPEnabled)
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Gain: |cffFF0000Disabled";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - Dificultad: {:.2f}. Bonus Poder Hechizos: {}. Peso Balance Clase: {}. Ganancia XP: |cffFF0000Deshabilitada";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                     }
                     else
                     {
                         if (!SolocraftXPBalEnabled)
                         {
-                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Balancing: |cffFF0000Disabled";
+                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - Dificultad: {:.2f}. Bonus Poder Hechizos: {}. Peso Balance Clase: {}. Balance XP: |cffFF0000Deshabilitado";
                             ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                         }
                         else
                         {
-                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - Difficulty Offset: {:.2f}. Spellpower Bonus: {}. Class Balance Weight: {}.  XP Balancing: |cff4CFF00Enabled";
+                            ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - Dificultad: {:.2f}. Bonus Poder Hechizos: {}. Peso Balance Clase: {}. Balance XP: |cff4CFF00Habilitado";
                             ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, SpellPowerBonus, classBalance);
                         }
                     }
@@ -681,12 +1023,12 @@ public:
                     // Announce to player - Debuff
                     if (!SolocraftXPBalEnabled && SolocraftXPEnabled)
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000BE ADVISED - You have been debuffed by offset: {:.2f} with a Class Balance Weight: {}. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - |cffFF0000ATENCIÓN - Has sido debilitado con offset: {:.2f} y Peso Balance Clase: {}. |cffFF8000Un miembro del grupo ya tiene el buff completo de la mazmorra. No se aplicarán bonificaciones de poder de hechizos. TODOS los miembros deben salir y volver a entrar para recibir un offset balanceado.";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, classBalance);
                     }
                     else
                     {
-                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000BE ADVISED - You have been debuffed by offset: {:.2f} with a Class Balance Weight: {} and no XP will be awarded. |cffFF8000 A group member already inside has the dungeon's full buff offset.  No Spellpower buff will be applied to spell casters.  ALL group members must exit the dungeon and re-enter to receive a balanced offset.";
+                        ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - |cffFF0000ATENCIÓN - Has sido debilitado con offset: {:.2f} y Peso Balance Clase: {} y no recibirás XP. |cffFF8000Un miembro del grupo ya tiene el buff completo de la mazmorra. No se aplicarán bonificaciones de poder de hechizos. TODOS los miembros deben salir y volver a entrar para recibir un offset balanceado.";
                         ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), difficulty, classBalance);
                     }
                 }
@@ -697,7 +1039,7 @@ public:
             else
             {
                 // Announce to player - Over Max Level Threshold
-                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entered {}  - |cffFF0000You have not been buffed. |cffFF8000 Your level is higher than the max level ({}) threshold for this dungeon.";
+                ss << "|cffFF0000[SoloCraft] |cffFF8000" << player->GetName() << " entró a {}  - |cffFF0000No has sido mejorado. |cffFF8000Tu nivel es mayor que el nivel máximo ({}) permitido para esta mazmorra.";
                 ChatHandler(player->GetSession()).PSendSysMessage(ss.str().c_str(), map->GetMapName(), dunLevel + SolocraftLevelDiff);
                 ClearBuffs(player); // Check to revert player back to normal
             }
@@ -708,9 +1050,86 @@ private:
     std::map<uint32, float> _unitDifficulty;
 };
 
+class SolocraftKillStreak : public PlayerScript
+{
+public:
+    SolocraftKillStreak() : PlayerScript("SolocraftKillStreak") {}
+
+    void OnPlayerCreatureKill(Player* player, Creature* creature) override
+    {
+        if (!SoloCraftKillStreakEnable || !player || !creature)
+            return;
+
+        // Only count kills in instances (dungeons/raids)
+        if (!player->GetMap()->IsDungeon() && !player->GetMap()->IsRaid())
+            return;
+
+        // Don't count trivial kills (critters, very low level mobs)
+        if (creature->GetLevel() < (player->GetLevel() - 10))
+            return;
+
+        ObjectGuid playerGUID = player->GetGUID();
+        playerKillStreaks[playerGUID]++;
+        lastKillTime[playerGUID] = time(nullptr);
+
+        uint32 currentStreak = playerKillStreaks[playerGUID];
+        ApplyKillStreakBonus(player, currentStreak);
+    }
+
+    void OnPlayerKilledByCreature(Creature* /*killer*/, Player* player) override
+    {
+        if (!SoloCraftKillStreakEnable || !player)
+            return;
+
+        // Reset kill streak on death
+        ResetKillStreak(player);
+    }
+
+    void OnPlayerUpdate(Player* player, uint32 /*diff*/) override
+    {
+        if (!SoloCraftKillStreakEnable || !player)
+            return;
+
+        // Check for kill streak decay every few seconds
+        static std::map<ObjectGuid, time_t> lastDecayCheck;
+        time_t currentTime = time(nullptr);
+        
+        if (lastDecayCheck[player->GetGUID()] == 0 || 
+            (currentTime - lastDecayCheck[player->GetGUID()]) > 30) // Check every 30 seconds
+        {
+            lastDecayCheck[player->GetGUID()] = currentTime;
+            CheckKillStreakDecay(player);
+        }
+    }
+
+    void OnPlayerLogout(Player* player) override
+    {
+        if (!player)
+            return;
+
+        // Remove attack power bonus before cleanup
+        ObjectGuid playerGUID = player->GetGUID();
+        if (playerKillStreakBonus.find(playerGUID) != playerKillStreakBonus.end())
+        {
+            float currentBonus = playerKillStreakBonus[playerGUID];
+            if (currentBonus > 0)
+            {
+                int32 attackPowerBonus = static_cast<int32>(currentBonus * player->GetLevel() * 2.5f);
+                player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, attackPowerBonus, false);
+            }
+        }
+
+        // Clean up kill streak data on logout
+        playerKillStreaks.erase(playerGUID);
+        lastKillTime.erase(playerGUID);
+        playerKillStreakBonus.erase(playerGUID);
+    }
+};
+
 void AddSolocraftScripts()
 {
     new SolocraftConfig();
     new SolocraftAnnounce();
     new SolocraftPlayerInstanceHandler();
+    new SolocraftKillStreak();
 }
