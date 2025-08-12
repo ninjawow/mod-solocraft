@@ -45,15 +45,41 @@ SoloCraft.Debuff.Enable = 1
 
 # Default:	1.0
 #			0.0 (Disable)
-SoloCraft.Spellpower.Mult = 1.0
+SoloCraft.Spellpower.Mult = 100.0
+
+
+# Crit Bonus Multiplier
+# Description: Crit Bonus Multiplier
+# Formula: (multiplier * stats_mult / 10)
+# Example Player with default modifier and dungeon difficulty of 5 will receive a base Crit chance increase of 25%.
+# Default:     0.5 - (Enabled)
+#              0   - (Disabled)
+SoloCraft.Crit.Mult = 10.0
+
+
+# Defense Bonus Multiplier
+# Description: Defense Bonus Multiplier
+# Formula: min(1000, (multiplier * stats_mult))
+# Example Player with default modifier and dungeon difficulty of 5 will receive Defense skill bonus of 500 (+20% dodge/parry/block).
+# Default:     1.0 - (Enabled)
+#              0   - (Disabled)
+SoloCraft.Defense.Mult = 20.0
+
+
+# Damagetaken Bonus Multiplier
+# Description: Damage Taken Reduction Bonus Multiplier
+# Formula: min(90, (multiplier * stats_mult / 10))
+# Example Player with default modifier and dungeon difficulty of 5 will receive Damage Reduction bonus of 50%.
+# Default:     1.0 - (Enabled)
+#              0   - (Disabled)
+SoloCraft.Damagetaken.Mult = 30.0
 
 
 # Stats Percentage Bonus Multiplier
 # Forumla: player->Stats * (((classBalance / 100) * difficulty) * multiplier)
-
 # Default: 	100.0
 #			0.0	(Disable)
-SoloCraft.Stats.Mult = 100.0
+SoloCraft.Stats.Mult = 1.0
 
 
 # Class Balancing Modifier
@@ -65,24 +91,22 @@ SoloCraft.Stats.Mult = 100.0
 #Default: 100 (Full Dungeon Difficulty Modifer will be Applied)
 #    	  0 (Disable) - 100
 
-SoloCraft.DEATH_KNIGHT = 100
-SoloCraft.DRUID = 100
+SoloCraft.DEATH_KNIGHT = 0
+SoloCraft.DRUID = 50
 SoloCraft.HUNTER = 100
 SoloCraft.MAGE = 100
-SoloCraft.PALADIN = 100
+SoloCraft.PALADIN = 0
 SoloCraft.PRIEST = 100
-SoloCraft.ROGUE = 100
+SoloCraft.ROGUE = 50
 SoloCraft.SHAMAN = 100
 SoloCraft.WARLOCK = 100
-SoloCraft.WARRIOR = 100
+SoloCraft.WARRIOR = 0
 
 
 # XP Gain 
 # This settings will Enable/Disable XP gained while in the current dungeon
-
-#Default: 1 (Enabled)
-#    	  0 (Disable)
-
+# Default: 1 (Enabled)
+#    	   0 (Disable)
 Solocraft.XP.Enabled = 1
 
 
@@ -90,9 +114,8 @@ Solocraft.XP.Enabled = 1
 # This settings will decrease the XP gained based on the Difficulty setting of the dungeon
 # and how many players are in the group.
 
-#Default: 1 (Enabled)
-#    	  0 (Disable)
-
+# Default: 1 (Enabled)
+#    	   0 (Disable)
 Solocraft.XPBal.Enabled = 1
 
 
@@ -103,9 +126,134 @@ Solocraft.XPBal.Enabled = 1
 # Difficulty Multipliers
 # Defaults: 5, 10, 25, 40
 Solocraft.Dungeon = 5.0 
-Solocraft.Heroic = 10.0
-Solocraft.Raid25 = 25.0
-Solocraft.Raid40 = 40.0
+Solocraft.Heroic  = 5.0
+Solocraft.Raid25  = 5.0
+Solocraft.Raid40  = 5.0
+
+
+################################################################################################
+#Player Level Thresholds 
+################################################################################################
+
+# Max player level difference over the Dungeon's Level for Solocraft to apply the 
+# difficulty offset buff.
+# Default: 	10
+# Disable:  80
+Solocraft.Max.Level.Diff = 80
+
+
+################################################################################################
+#Dungeon Base Levels
+################################################################################################
+
+#Catch All - Default 80
+Solocraft.Dungeon.Level = 80
+
+
+###################################################################################################
+#  KILL STREAK SYSTEM
+###################################################################################################
+
+# SoloCraft.KillStreak.Enable
+# Description: Enable kill streak bonuses for consecutive kills without dying?
+# Progressive damage bonuses with epic milestone messages.
+# Default:     1 - (Enabled)
+#              0 - (Disabled)
+SoloCraft.KillStreak.Enable = 1
+
+
+# SoloCraft.KillStreak.DamagePerKill
+# Description: Kill Streak Damage Bonus per 5 kills
+# Formula: min(MaxBonus, (killStreak / 5) * DamagePerKill)
+# Example: 5 kills with value 2.0 = +2% damage bonus
+# 10 kills with value 2.0 = +4% damage bonus
+# 20 kills with value 2.0 = +8% damage bonus
+# Default:     2.0 - (2% per 5 kills - balanced)
+#              0   - (Disabled)
+SoloCraft.KillStreak.DamagePerKill = 2.0
+
+
+# SoloCraft.KillStreak.MaxBonus
+# Description: Kill Streak Maximum Bonus Cap
+# Prevents kill streak bonuses from exceeding this percentage.
+# Example: With 50.0 cap, damage bonus stops at +50% regardless of kills
+# Default:     50.0 - (50% maximum bonus)
+#              0    - (No cap)
+SoloCraft.KillStreak.MaxBonus = 50.0
+
+
+# SoloCraft.KillStreak.DecayTime
+# Description: Kill Streak Decay Time in seconds
+# Time of inactivity before kill streak automatically resets.
+# Example: 900 = 15 minutes without kills resets streak to 0
+# Default:     900 - (15 minutes)
+#              0   - (Never decays, only resets on death/logout)
+SoloCraft.KillStreak.DecayTime = 900
+
+
+###################################################################################################
+#  CLASS HP MULTIPLIERS
+###################################################################################################
+
+# SoloCraft.[Class].HP.Mult
+# Description: HP Multiplier for each class when entering instances
+# Formula: newMaxHealth = baseHealth × classHPMultiplier × difficulty
+# Tank classes have higher multipliers for survivability
+# DPS classes have moderate multipliers for balance
+# Caster classes have lower multipliers but compensated with mana
+# Default:     varies by class role
+#              1.0 - (No change)
+
+
+# Tank Classes - High survivability needs
+SoloCraft.Warrior.HP.Mult = 3.0
+SoloCraft.Paladin.HP.Mult = 2.5
+SoloCraft.DeathKnight.HP.Mult = 2.8
+
+# Physical DPS Classes - Moderate survivability
+SoloCraft.Rogue.HP.Mult = 2.0
+SoloCraft.Hunter.HP.Mult = 2.2
+
+# Caster Classes - Lower HP but high mana compensation
+SoloCraft.Mage.HP.Mult = 1.5
+SoloCraft.Warlock.HP.Mult = 1.8
+SoloCraft.Priest.HP.Mult = 1.6
+
+# Hybrid Classes - Balanced for versatility
+SoloCraft.Shaman.HP.Mult = 2.0
+SoloCraft.Druid.HP.Mult = 2.0
+
+###################################################################################################
+#  CLASS MANA MULTIPLIERS
+###################################################################################################
+
+# SoloCraft.[Class].Mana.Mult
+# Description: Mana Multiplier for each class when entering instances
+# Formula: newMaxMana = baseMana × classManaMultiplier × difficulty
+# Caster classes receive massive mana pools for constant casting
+# Tank classes receive minimal mana (use rage/runic power)
+# Hybrid classes receive balanced mana for versatility
+#        Default:     varies by class role
+#                     1.0 - (No change)
+
+
+# Tank Classes - Minimal mana needs (use alternative resources)
+SoloCraft.Warrior.Mana.Mult = 0.8
+SoloCraft.Paladin.Mana.Mult = 2.0
+SoloCraft.DeathKnight.Mana.Mult = 1.5
+
+# Physical DPS Classes - Low to moderate mana needs
+SoloCraft.Rogue.Mana.Mult = 0.8
+SoloCraft.Hunter.Mana.Mult = 1.8
+
+# Caster Classes - Massive mana pools for constant spell casting
+SoloCraft.Mage.Mana.Mult = 4.0
+SoloCraft.Warlock.Mana.Mult = 3.5
+SoloCraft.Priest.Mana.Mult = 3.8
+
+# Hybrid Classes - Balanced mana for all forms/specs
+SoloCraft.Shaman.Mana.Mult = 2.8
+SoloCraft.Druid.Mana.Mult = 2.5
 
 
 ################################################################################################
@@ -126,22 +274,22 @@ Solocraft.RazorfenDowns = 5.0
 Solocraft.MonasteryInstances = 5.0
 # Zul'Farrak
 Solocraft.TanarisInstance = 5.0
-Solocraft.BlackRockSpire = 10.0
+Solocraft.BlackRockSpire = 5.0
 Solocraft.BlackrockDepths = 5.0
-Solocraft.OnyxiaLairInstance = 40.0
+Solocraft.OnyxiaLairInstance = 5.0
 #Scholomance
 Solocraft.SchoolofNecromancy = 5.0
-Solocraft.Zul'gurub = 20.0
+Solocraft.Zul'gurub = 5.0
 Solocraft.Stratholme = 5.0
 Solocraft.Mauradon = 5.0
 # Ragefire Chasm
 Solocraft.OrgrimmarInstance = 5.0
-Solocraft.MoltenCore = 40.0
+Solocraft.MoltenCore = 5.0
 Solocraft.DireMaul = 5.0
-Solocraft.BlackwingLair = 40.0
+Solocraft.BlackwingLair = 5.0
 # Ruins of Ahn'Qiraj
-Solocraft.AhnQiraj = 20.0
-Solocraft.AhnQirajTemple = 40.0
+Solocraft.AhnQiraj = 5.0
+Solocraft.AhnQirajTemple = 5.0
 
 
 ################################################################################################
@@ -151,9 +299,9 @@ Solocraft.AhnQirajTemple = 40.0
 # The Black Morass
 Solocraft.CavernsOfTime = 5.0
 Solocraft.CavernsOfTimeH = 5.0
-Solocraft.Karazahn = 10.0
+Solocraft.Karazahn = 5.0
 # The Battle for Mount Hyjal - Hyjal Summit
-Solocraft.HyjalPast = 25.0
+Solocraft.HyjalPast = 5.0
 # The Shattered Halls
 Solocraft.HellfireMilitary = 5.0
 Solocraft.HellfireMilitaryH = 5.0
@@ -163,7 +311,7 @@ Solocraft.HellfireDemonH = 5.0
 Solocraft.HellfireRampart = 5.0
 Solocraft.HellfireRampartH = 5.0
 # Magtheridon's Lair
-Solocraft.HellfireRaid = 25.0
+Solocraft.HellfireRaid = 5.0
 # The Steamvault
 Solocraft.CoilfangPumping = 5.0
 Solocraft.CoilfangPumpingH = 5.0
@@ -174,9 +322,9 @@ Solocraft.CoilfangMarshH = 5.0
 Solocraft.CoilfangDraenei = 5.0
 Solocraft.CoilfangDraeneiH = 5.0
 # Serpentshrine Cavern
-Solocraft.CoilfangRaid = 25.0
+Solocraft.CoilfangRaid = 5.0
 # The Eye
-Solocraft.TempestKeepRaid = 25.0
+Solocraft.TempestKeepRaid = 5.0
 # The Arcatraz
 Solocraft.TempestKeepArcane = 5.0
 Solocraft.TempestKeepArcaneH = 5.0
@@ -201,11 +349,11 @@ Solocraft.AuchindounDraeneiH = 5.0
 # Old Hillsbrad Foothills
 Solocraft.HillsbradPast = 5.0
 Solocraft.HillsbradPastH = 5.0
-Solocraft.BlackTemple = 25.0
-Solocraft.GruulsLair = 25.0
+Solocraft.BlackTemple = 5.0
+Solocraft.GruulsLair = 5.0
 Solocraft.ZulAman = 5.0
 Solocraft.ZulAmanH = 5.0
-Solocraft.SunwellPlateau = 25.0
+Solocraft.SunwellPlateau = 5.0
 # Magister's Terrace
 Solocraft.Sunwell5ManFix = 5.0
 Solocraft.Sunwell5ManFixH = 5.0
@@ -216,8 +364,8 @@ Solocraft.Sunwell5ManFixH = 5.0
 ################################################################################################
 
 # Naxxramas
-Solocraft.StratholmeRaid = 10.0
-Solocraft.StratholmeRaidH = 25.0
+Solocraft.StratholmeRaid = 5.0
+Solocraft.StratholmeRaidH = 5.0
 # Utgarde Keep
 Solocraft.Valgarde70 = 5.0
 Solocraft.Valgarde70H = 5.0
@@ -245,33 +393,33 @@ Solocraft.Azjol_UppercityH = 5.0
 Solocraft.Ulduar80 = 5.0
 Solocraft.Ulduar80H = 5.0
 # Ulduar
-Solocraft.UlduarRaid = 10.0
-Solocraft.UlduarRaidH = 25.0
+Solocraft.UlduarRaid = 5.0
+Solocraft.UlduarRaidH = 5.0
 Solocraft.GunDrak = 5.0
 Solocraft.GunDrakH = 5.0
 # Violet Hold
 Solocraft.DalaranPrison = 5.0
 Solocraft.DalaranPrisonH = 5.0
 # The Obsidian Sanctum
-Solocraft.ChamberOfAspectsBlack = 10.0
-Solocraft.ChamberOfAspectsBlackH = 25.0
+Solocraft.ChamberOfAspectsBlack = 5.0
+Solocraft.ChamberOfAspectsBlackH = 5.0
 # The Eye of Eternity
-Solocraft.NexusRaid = 10.0
-Solocraft.NexusRaidH = 25.0
+Solocraft.NexusRaid = 5.0
+Solocraft.NexusRaidH = 5.0
 # Ahn'kahet: The Old Kingdom
 Solocraft.Azjol_LowerCity = 5.0
 Solocraft.Azjol_LowerCityH = 5.0
-Solocraft.IcecrownCitadel = 10.0
-Solocraft.IcecrownCitadelH = 25.0
+Solocraft.IcecrownCitadel = 5.0
+Solocraft.IcecrownCitadelH = 5.0
 # The Forge of Souls
 Solocraft.IcecrownCitadel5Man = 5.0
 Solocraft.IcecrownCitadel5ManH = 5.0
 # Trial of the Crusader
-Solocraft.ArgentTournamentRaid = 10.0
-Solocraft.ArgentTournamentRaidH = 25.0
+Solocraft.ArgentTournamentRaid = 5.0
+Solocraft.ArgentTournamentRaidH = 5.0
 # Grand Trial of the Crusader Heroic
-Solocraft.ArgentTournamentRaidH10 = 10.0
-Solocraft.ArgentTournamentRaidH25 = 25.0
+Solocraft.ArgentTournamentRaidH10 = 5.0
+Solocraft.ArgentTournamentRaidH25 = 5.0
 # Trial of the Champion
 Solocraft.ArgentTournamentDungeon = 5.0
 Solocraft.ArgentTournamentDungeonH = 5.0
@@ -284,25 +432,6 @@ Solocraft.HallsOfReflectionH = 5.0
 # The Ruby Sanctum
 Solocraft.ChamberOfAspectsRed = 5.0
 Solocraft.ChamberOfAspectsRedH = 5.0
-
-
-################################################################################################
-#Player Level Thresholds 
-################################################################################################
-
-#Max player level difference over the Dungeon's Level for Solocraft to apply the 
-# difficulty offset buff.
-# Default: 	10
-# Disable: 80
-Solocraft.Max.Level.Diff = 10
-
-
-################################################################################################
-#Dungeon Base Levels
-################################################################################################
-
-#Catch All - Default 80
-Solocraft.Dungeon.Level = 80
 
 
 ################################################################################################
@@ -451,3 +580,4 @@ Solocraft.ChamberOfAspectsRed.Level = 80
 #   Solocraft.Instance.Excluded = "30,489,529,559,562,566,572,607,617,618,628"
 #   This example excludes scaling in PvP BG & Arena maps
 Solocraft.Instance.Excluded = ""
+
