@@ -10,7 +10,7 @@
 #                         /\___/ /\____/                                                
 #                         \/__/  \_/__/          http://stygianthebest.github.io                                         
 ###################################################################################################
-#  SOLOCRAFT
+# SOLOCRAFT
 ###################################################################################################
 
 # Enable the module? (1: true | 0: false)
@@ -21,8 +21,8 @@ Solocraft.Announce = 1
 
 
 ###################################################################################################
-#  Balancing - Groups (Overloading), Global Spellpower and Stats modifier, Global Class Balancing, 
-#  and XP Gain Balancing
+# Balancing - Groups (Overloading), Global Spellpower and Stats modifier, Global Class Balancing, 
+# and XP Gain Balancing
 ###################################################################################################
 
 # Enable Debuff of new party members who enter the dungeon to avoid overloading the dungeon? 
@@ -120,7 +120,7 @@ Solocraft.XPBal.Enabled = 1
 
 
 ################################################################################################
-#Catch all Bucket - Difficulty Offset Defaults
+# Catch all Bucket - Difficulty Offset Defaults
 ################################################################################################
 
 # Difficulty Multipliers
@@ -132,7 +132,7 @@ Solocraft.Raid40  = 5.0
 
 
 ################################################################################################
-#Player Level Thresholds 
+# Player Level Thresholds 
 ################################################################################################
 
 # Max player level difference over the Dungeon's Level for Solocraft to apply the 
@@ -143,121 +143,15 @@ Solocraft.Max.Level.Diff = 80
 
 
 ################################################################################################
-#Dungeon Base Levels
+# Dungeon Base Levels
 ################################################################################################
 
-#Catch All - Default 80
+# Catch All - Default 80
 Solocraft.Dungeon.Level = 80
 
 
-###################################################################################################
-#  KILL STREAK SYSTEM
-###################################################################################################
-
-# SoloCraft.KillStreak.Enable
-# Description: Enable kill streak bonuses for consecutive kills without dying?
-# Progressive damage bonuses with epic milestone messages.
-# Default:     1 - (Enabled)
-#              0 - (Disabled)
-SoloCraft.KillStreak.Enable = 1
-
-
-# SoloCraft.KillStreak.DamagePerKill
-# Description: Kill Streak Damage Bonus per 5 kills
-# Formula: min(MaxBonus, (killStreak / 5) * DamagePerKill)
-# Example: 5 kills with value 2.0 = +2% damage bonus
-# 10 kills with value 2.0 = +4% damage bonus
-# 20 kills with value 2.0 = +8% damage bonus
-# Default:     2.0 - (2% per 5 kills - balanced)
-#              0   - (Disabled)
-SoloCraft.KillStreak.DamagePerKill = 2.0
-
-
-# SoloCraft.KillStreak.MaxBonus
-# Description: Kill Streak Maximum Bonus Cap
-# Prevents kill streak bonuses from exceeding this percentage.
-# Example: With 50.0 cap, damage bonus stops at +50% regardless of kills
-# Default:     50.0 - (50% maximum bonus)
-#              0    - (No cap)
-SoloCraft.KillStreak.MaxBonus = 50.0
-
-
-# SoloCraft.KillStreak.DecayTime
-# Description: Kill Streak Decay Time in seconds
-# Time of inactivity before kill streak automatically resets.
-# Example: 900 = 15 minutes without kills resets streak to 0
-# Default:     900 - (15 minutes)
-#              0   - (Never decays, only resets on death/logout)
-SoloCraft.KillStreak.DecayTime = 900
-
-
-###################################################################################################
-#  CLASS HP MULTIPLIERS
-###################################################################################################
-
-# SoloCraft.[Class].HP.Mult
-# Description: HP Multiplier for each class when entering instances
-# Formula: newMaxHealth = baseHealth × classHPMultiplier × difficulty
-# Tank classes have higher multipliers for survivability
-# DPS classes have moderate multipliers for balance
-# Caster classes have lower multipliers but compensated with mana
-# Default:     varies by class role
-#              1.0 - (No change)
-
-
-# Tank Classes - High survivability needs
-SoloCraft.Warrior.HP.Mult = 3.0
-SoloCraft.Paladin.HP.Mult = 2.5
-SoloCraft.DeathKnight.HP.Mult = 2.8
-
-# Physical DPS Classes - Moderate survivability
-SoloCraft.Rogue.HP.Mult = 2.0
-SoloCraft.Hunter.HP.Mult = 2.2
-
-# Caster Classes - Lower HP but high mana compensation
-SoloCraft.Mage.HP.Mult = 1.5
-SoloCraft.Warlock.HP.Mult = 1.8
-SoloCraft.Priest.HP.Mult = 1.6
-
-# Hybrid Classes - Balanced for versatility
-SoloCraft.Shaman.HP.Mult = 2.0
-SoloCraft.Druid.HP.Mult = 2.0
-
-###################################################################################################
-#  CLASS MANA MULTIPLIERS
-###################################################################################################
-
-# SoloCraft.[Class].Mana.Mult
-# Description: Mana Multiplier for each class when entering instances
-# Formula: newMaxMana = baseMana × classManaMultiplier × difficulty
-# Caster classes receive massive mana pools for constant casting
-# Tank classes receive minimal mana (use rage/runic power)
-# Hybrid classes receive balanced mana for versatility
-#        Default:     varies by class role
-#                     1.0 - (No change)
-
-
-# Tank Classes - Minimal mana needs (use alternative resources)
-SoloCraft.Warrior.Mana.Mult = 0.8
-SoloCraft.Paladin.Mana.Mult = 2.0
-SoloCraft.DeathKnight.Mana.Mult = 1.5
-
-# Physical DPS Classes - Low to moderate mana needs
-SoloCraft.Rogue.Mana.Mult = 0.8
-SoloCraft.Hunter.Mana.Mult = 1.8
-
-# Caster Classes - Massive mana pools for constant spell casting
-SoloCraft.Mage.Mana.Mult = 4.0
-SoloCraft.Warlock.Mana.Mult = 3.5
-SoloCraft.Priest.Mana.Mult = 3.8
-
-# Hybrid Classes - Balanced mana for all forms/specs
-SoloCraft.Shaman.Mana.Mult = 2.8
-SoloCraft.Druid.Mana.Mult = 2.5
-
-
 ################################################################################################
-#Classic Instances - Difficulty
+# Classic Instances - Difficulty
 ################################################################################################
 
 Solocraft.ShadowfangKeep = 5.0
@@ -293,7 +187,7 @@ Solocraft.AhnQirajTemple = 5.0
 
 
 ################################################################################################
-#BC Instances - Difficulty
+# BC Instances - Difficulty
 ################################################################################################
 
 # The Black Morass
@@ -360,7 +254,7 @@ Solocraft.Sunwell5ManFixH = 5.0
 
 
 ################################################################################################
-#WOTLK Instances - Difficulty
+# WOTLK Instances - Difficulty
 ################################################################################################
 
 # Naxxramas
@@ -435,7 +329,7 @@ Solocraft.ChamberOfAspectsRedH = 5.0
 
 
 ################################################################################################
-#Classic Instances - Base Level
+# Classic Instances - Base Level
 ################################################################################################
 
 Solocraft.ShadowfangKeep.Level = 15
@@ -471,7 +365,7 @@ Solocraft.AhnQirajTemple.Level = 60
 
 
 ################################################################################################
-#BC Instances - Base Level
+# BC Instances - Base Level
 ################################################################################################
 
 # The Black Morass
@@ -521,7 +415,7 @@ Solocraft.Sunwell5ManFix.Level = 68
 
 
 ################################################################################################
-#WOTLK Instances - Base Level
+# WOTLK Instances - Base Level
 ################################################################################################
 
 # Naxxramas
@@ -570,7 +464,7 @@ Solocraft.HallsOfReflection.Level = 78
 Solocraft.ChamberOfAspectsRed.Level = 80
 
 ###################################################################################################
-#  Misc
+# Misc
 ###################################################################################################
 
 # Map excluded
